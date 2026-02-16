@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ax Viral24</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/idb@7/build/umd.js"></script>
+    <style>
+        :root {
+          --primary: #f90;
+          --bg-dark: #000;
+          --bg-card: #18181b;
+          --text-main: #fff;
+          --text-muted: #71717a;
+        }
+        
+        body {
+          background-color: var(--bg-dark);
+          color: var(--text-main);
+          font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+        
+        .text-primary {
+          color: var(--primary);
+        }
+        
+        .bg-primary {
+          background-color: var(--primary);
+        }
+        
+        .border-primary {
+          border-color: var(--primary);
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+          width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: #111;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: #333;
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <script>
+        // Use the global idb object provided by the CDN
+        const { openDB } = idb;
+
+        // --- Icons ---
+        const Icons = {
+            Home: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+            Lock: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+            Upload: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>`,
+            Trash2: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>`,
+            PlayCircle: `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>`,
+            ImageIcon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`,
+            FileVideo: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="m10 13 5 3-5 3v-6z"/></svg>`,
+            FileImage: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><circle cx="10" cy="13" r="2"/><path d="m20 17-1.09-1.09a2 2 0 0 0-2.82 0L10 22"/></svg>`,
+            LinkIcon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
+            ArrowLeft: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>`,
+            Search: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`,
+            Flame: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`
+        };
+
+        // --- Database ---
+        const DB_NAME = 'AxViral24DB';
+        const STORE_NAME = 'media';
+
+        const initDB = async () => {
+          return openDB(DB_NAME, 1, {
+            upgrade(db) {
+              if (!db.objectStoreNames.contains(STORE_NAME)) {
+                const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                store.createIndex('createdAt', 'createdAt');
+              }
+            },
+          });
+        };
+
+        const addMedia = async (media) => {
+          const db = await initDB();
+          return db.add(STORE_NAME, media);
+        };
+
+        const getAllMedia = async () => {
+          const db = await initDB();
+          return db.getAllFromIndex(STORE_NAME, 'createdAt');
+        };
+
+        const getMediaById = async (id) => {
+          const db = await initDB();
+          return db.get(STORE_NAME, id);
+        };
+
+        const deleteMedia = async (id) => {
+            const db = await initDB();
+            return db.delete(STORE_NAME, id);
+        }
+
+        // --- App Logic ---
+
+        const app = document.getElementById('app');
+
+        // Router
+        const router = async () => {
+            const hash = window.location.hash;
+            app.innerHTML = ''; // Clear content
+
+            if (hash === '' || hash === '#/' || hash === '#home') {
+                app.appendChild(await renderHome());
+            } else if (hash === '#/admin') {
+                app.appendChild(await renderAdmin());
+            } else if (hash.startsWith('#/watch/')) {
+                const id = hash.split('#/watch/')[1];
+                app.appendChild(await renderWatch(id));
+            } else {
+                window.location.hash = '#/';
+            }
+            
+            // Attach Footer to whatever page is rendered
+            app.appendChild(renderFooter());
+            
+            // Add event listeners for new elements
+            attachGlobalListeners();
+        };
+
+        window.addEventListener('hashchange', router);
+        window.addEventListener('load', router);
+
+        // --- Components ---
+
+        function renderNavbar() {
+            const nav = document.createElement('nav');
+            nav.className = "bg-black border-b border-zinc-800 sticky top-0 z-50";
+            nav.innerHTML = `
+              <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                  <div class="flex items-center">
+                    <a href="#/" class="flex items-center gap-2 cursor-pointer">
+                      <div class="bg-[#f90] text-black font-bold px-2 py-1 rounded-sm text-xl tracking-tighter">
+                        Ax
+                      </div>
+                      <span class="text-white font-bold text-xl tracking-tighter">Viral24</span>
+                    </a>
+                  </div>
+                  <div class="flex items-center space-x-4">
+                    <a href="#/" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2">
+                      ${Icons.Home}
+                      Home
+                    </a>
+                    <a href="#/admin" class="text-gray-300 hover:text-[#f90] px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors">
+                      ${Icons.Lock}
+                      Admin
+                    </a>
+                  </div>
+                </div>
+              </div>
+            `;
+            return nav;
+        }
+
+        function renderFooter() {
+            const footer = document.createElement('footer');
+            footer.className = "bg-black border-t border-zinc-800 text-zinc-500 py-8 mt-auto w-full";
+            footer.innerHTML = `
+              <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-2">
+                   <div class="bg-[#f90] text-black font-bold px-2 py-0.5 rounded-sm text-sm tracking-tighter">
+                        Ax
+                   </div>
+                   <span class="text-white font-bold text-sm tracking-tighter">Viral24</span>
+                   <span class="text-xs ml-2">© 2024</span>
+                </div>
+                
+                <div class="flex gap-6 text-sm">
+                   <a href="#" class="hover:text-[#f90]">Terms</a>
+                   <a href="#" class="hover:text-[#f90]">Privacy</a>
+                   <a href="#" class="hover:text-[#f90]">DMCA</a>
+                   <a href="#" class="hover:text-[#f90]">2257</a>
+                </div>
+              </div>
+            `;
+            return footer;
+        }
+
+        async function renderHome() {
+            const container = document.createElement('div');
+            container.className = "min-h-screen bg-black text-white font-sans flex flex-col";
+            
+            container.appendChild(renderNavbar());
+
+            const main = document.createElement('main');
+            main.className = "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full";
+            
+            // UI Structure
+            main.innerHTML = `
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                    <h1 class="text-2xl font-bold border-l-4 border-[#f90] pl-3">
+                      Latest Uploads
+                    </h1>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                        <!-- Search -->
+                        <div class="relative w-full sm:w-64">
+                            <input type="text" id="search-input" placeholder="Search videos..." class="w-full bg-zinc-900 border border-zinc-700 text-white rounded px-4 py-2 pl-10 focus:outline-none focus:border-[#f90]">
+                            <div class="absolute left-3 top-2.5 text-zinc-500">
+                                ${Icons.Search}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Categories -->
+                <div class="flex flex-wrap gap-2 mb-8">
+                    <button class="category-btn px-4 py-1.5 rounded-full text-sm font-medium bg-[#f90] text-black hover:bg-[#e80] transition-colors" data-category="all">All</button>
+                    <button class="category-btn px-4 py-1.5 rounded-full text-sm font-medium bg-zinc-800 text-gray-300 hover:bg-zinc-700 hover:text-white transition-colors" data-category="video">Videos</button>
+                    <button class="category-btn px-4 py-1.5 rounded-full text-sm font-medium bg-zinc-800 text-gray-300 hover:bg-zinc-700 hover:text-white transition-colors" data-category="image">Photos</button>
+                    <button class="category-btn px-4 py-1.5 rounded-full text-sm font-medium bg-zinc-800 text-gray-300 hover:bg-zinc-700 hover:text-white transition-colors flex items-center gap-1" data-category="trending">
+                        ${Icons.Flame} Trending
+                    </button>
+                </div>
+
+                <div id="media-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div class="col-span-full flex justify-center py-12">
+                        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#f90]"></div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(main);
+
+            // Fetch items
+            const allItems = await getAllMedia();
+            allItems.sort((a, b) => b.createdAt - a.createdAt);
+            
+            const grid = main.querySelector('#media-grid');
+            const searchInput = main.querySelector('#search-input');
+            const categoryBtns = main.querySelectorAll('.category-btn');
+
+            let currentCategory = 'all';
+            let searchQuery = '';
+
+            const filterAndRender = () => {
+                grid.innerHTML = '';
+                
+                const filtered = allItems.filter(item => {
+                    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
+                    let matchesCategory = true;
+
+                    if (currentCategory === 'video') matchesCategory = item.type === 'video';
+                    if (currentCategory === 'image') matchesCategory = item.type === 'image';
+                    if (currentCategory === 'trending') matchesCategory = item.isTrending === true;
+
+                    return matchesSearch && matchesCategory;
+                });
+
+                if (filtered.length === 0) {
+                    grid.innerHTML = `
+                        <div class="col-span-full text-center py-12 bg-zinc-900 rounded-lg border border-zinc-800">
+                            <h2 class="text-xl font-semibold text-zinc-400">No media found.</h2>
+                        </div>
+                    `;
+                } else {
+                    filtered.forEach(item => {
+                        const card = createMediaCard(item);
+                        grid.appendChild(card);
+                    });
+                }
+            };
+
+            // Event Listeners
+            searchInput.addEventListener('input', (e) => {
+                searchQuery = e.target.value;
+                filterAndRender();
+            });
+
+            categoryBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Update UI
+                    categoryBtns.forEach(b => {
+                        b.className = "category-btn px-4 py-1.5 rounded-full text-sm font-medium bg-zinc-800 text-gray-300 hover:bg-zinc-700 hover:text-white transition-colors flex items-center gap-1";
+                    });
+                    btn.className = "category-btn px-4 py-1.5 rounded-full text-sm font-medium bg-[#f90] text-black hover:bg-[#e80] transition-colors flex items-center gap-1";
+                    
+                    // Update State
+                    currentCategory = btn.dataset.category;
+                    filterAndRender();
+                });
+            });
+
+            // Initial Render
+            filterAndRender();
+
+            return container;
+        }
+
+        function createMediaCard(media) {
+            const card = document.createElement('a');
+            card.href = `#/watch/${media.id}`;
+            card.className = "group block relative";
+            
+            let thumbnailUrl = '';
+            let videoUrl = '';
+            
+            if (media.thumbnail) {
+                thumbnailUrl = media.thumbnail;
+            } else if (media.type === 'image') {
+                if (media.sourceType === 'file' && media.file) {
+                    thumbnailUrl = URL.createObjectURL(media.file);
+                } else if (media.sourceType === 'url' && media.remoteUrl) {
+                    thumbnailUrl = media.remoteUrl;
+                }
+            }
+
+            if (media.type === 'video') {
+                 if (media.sourceType === 'file' && media.file) {
+                    videoUrl = URL.createObjectURL(media.file);
+                 } else if (media.sourceType === 'url' && media.remoteUrl) {
+                    const isEmbed = media.remoteUrl.includes('youtube.com') || 
+                                    media.remoteUrl.includes('youtu.be') || 
+                                    media.remoteUrl.includes('vimeo.com') ||
+                                    media.remoteUrl.includes('drive.google.com');
+                    if (!isEmbed) {
+                        videoUrl = media.remoteUrl;
+                    }
+                 }
+            }
+
+            const thumbContent = thumbnailUrl 
+                ? `<img src="${thumbnailUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />`
+                : `<div class="w-full h-full flex items-center justify-center text-zinc-600 bg-zinc-800">${media.type === 'video' ? Icons.PlayCircle : Icons.ImageIcon}</div>`;
+
+            card.innerHTML = `
+              <div class="relative aspect-video bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 hover:border-[#f90] transition-colors media-card-visual">
+                ${thumbContent}
+                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none overlay-icon">
+                    ${media.type === 'video' ? `<div class="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg">${Icons.PlayCircle}</div>` : ''}
+                </div>
+                <div class="absolute top-2 right-2 flex gap-1">
+                     ${media.isTrending ? `<div class="bg-red-600 text-white text-xs px-1.5 py-0.5 rounded flex items-center gap-1 font-bold">${Icons.Flame}</div>` : ''}
+                </div>
+                <div class="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1 rounded pointer-events-none">
+                     ${media.type === 'video' ? 'Video' : 'Photo'}
+                </div>
+                ${videoUrl ? `<video src="${videoUrl}" muted loop class="absolute inset-0 w-full h-full object-cover hidden preview-video"></video>` : ''}
+              </div>
+              <div class="mt-2">
+                <h3 class="text-white text-sm font-medium line-clamp-2 group-hover:text-[#f90] transition-colors">
+                  ${media.title}
+                </h3>
+                <p class="text-zinc-500 text-xs mt-1">
+                  ${new Date(media.createdAt).toLocaleDateString()} • ${media.views} views
+                </p>
+              </div>
+            `;
+
+            // Hover effect for preview
+            if (videoUrl) {
+                const visual = card.querySelector('.media-card-visual');
+                const video = card.querySelector('.preview-video');
+                
+                visual.addEventListener('mouseenter', () => {
+                    video.classList.remove('hidden');
+                    video.play().catch(e => console.log('Autoplay prevented', e));
+                });
+                visual.addEventListener('mouseleave', () => {
+                    video.classList.add('hidden');
+                    video.pause();
+                    video.currentTime = 0;
+                });
+            }
+
+            return card;
+        }
+
+        async function renderAdmin() {
+            const container = document.createElement('div');
+            container.className = "min-h-screen bg-black text-white font-sans flex flex-col";
+            container.appendChild(renderNavbar());
+
+            const main = document.createElement('main');
+            main.className = "flex-1 flex flex-col p-4 w-full max-w-7xl mx-auto";
+            container.appendChild(main);
+
+            // Check Auth
+            const isLoggedIn = localStorage.getItem('admin_auth') === 'true';
+
+            if (!isLoggedIn) {
+                main.innerHTML = `
+                    <div class="flex-1 flex items-center justify-center">
+                        <div class="bg-zinc-900 p-8 rounded-lg border border-zinc-800 w-full max-w-md shadow-2xl">
+                            <div class="flex justify-center mb-6">
+                                <div class="bg-[#f90] p-3 rounded-full text-black">${Icons.Lock}</div>
+                            </div>
+                            <h2 class="text-2xl font-bold text-center mb-6">Admin Access</h2>
+                            <form id="login-form" class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-400 mb-1">Password</label>
+                                    <input type="password" id="password" class="w-full bg-black border border-zinc-700 rounded p-3 text-white focus:outline-none focus:border-[#f90]" placeholder="Enter admin password">
+                                </div>
+                                <p id="login-error" class="text-red-500 text-sm text-center hidden">Invalid Password</p>
+                                <button type="submit" class="w-full bg-[#f90] hover:bg-[#e80] text-black font-bold py-3 rounded transition-colors">Login</button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    document.getElementById('login-form').addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        const pwd = document.getElementById('password').value;
+                        if (pwd === '@PASS1151') {
+                            localStorage.setItem('admin_auth', 'true');
+                            router(); // Re-render
+                        } else {
+                            document.getElementById('login-error').classList.remove('hidden');
+                        }
+                    });
+                }, 0);
+
+                return container;
+            }
+
+            // Admin Dashboard
+            main.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 py-8">
+                    <!-- Upload Panel -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-zinc-900 p-6 rounded-lg border border-zinc-800 sticky top-24">
+                            <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-[#f90]">
+                                ${Icons.Upload} Upload Media
+                            </h2>
+                            
+                            <div class="flex mb-4 bg-zinc-800 rounded p-1">
+                                <button id="tab-file" class="flex-1 py-1 text-sm font-medium rounded transition-colors bg-[#f90] text-black">File Upload</button>
+                                <button id="tab-url" class="flex-1 py-1 text-sm font-medium rounded transition-colors text-gray-400 hover:text-white">URL Import</button>
+                            </div>
+
+                            <form id="upload-form" class="space-y-4">
+                                <input type="hidden" id="upload-type" value="file">
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-400 mb-1">Title</label>
+                                    <input type="text" id="title" class="w-full bg-black border border-zinc-700 rounded p-2 text-white focus:outline-none focus:border-[#f90]" required>
+                                </div>
+
+                                <div id="url-fields" class="hidden space-y-4">
+                                     <div>
+                                        <label class="block text-sm font-medium text-gray-400 mb-1">Media Type</label>
+                                        <div class="flex gap-4">
+                                            <label class="flex items-center gap-2 cursor-pointer">
+                                                <input type="radio" name="mediaType" value="video" checked class="text-[#f90] focus:ring-[#f90]">
+                                                <span class="text-sm">Video</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 cursor-pointer">
+                                                <input type="radio" name="mediaType" value="image" class="text-[#f90] focus:ring-[#f90]">
+                                                <span class="text-sm">Image</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-400 mb-1">Media URL</label>
+                                        <input type="url" id="remoteUrl" class="w-full bg-black border border-zinc-700 rounded p-2 text-white focus:outline-none focus:border-[#f90]" placeholder="https://...">
+                                        <p class="text-xs text-zinc-600 mt-1">Supports direct links, YouTube, Vimeo, GDrive.</p>
+                                    </div>
+                                </div>
+
+                                <div id="file-field">
+                                    <label class="block text-sm font-medium text-gray-400 mb-1">File</label>
+                                    <div class="relative border-2 border-dashed border-zinc-700 rounded-lg p-6 hover:border-[#f90] transition-colors text-center cursor-pointer bg-black/50">
+                                        <input type="file" id="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="video/*,image/*">
+                                        <div id="file-label" class="text-gray-500 flex flex-col items-center">
+                                            ${Icons.Upload}
+                                            <span class="text-sm mt-2">Select video or photo</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-400 mb-1 flex items-center gap-2">
+                                        ${Icons.ImageIcon} Thumbnail Image (Optional)
+                                    </label>
+                                    <div class="relative border border-zinc-700 rounded p-2 hover:border-[#f90] transition-colors cursor-pointer bg-black">
+                                        <input type="file" id="thumbnailFile" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*">
+                                        <div id="thumb-label" class="flex items-center gap-2 text-gray-500 text-sm">
+                                            Select an image from device...
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="flex items-center gap-3 p-3 border border-zinc-700 rounded bg-black cursor-pointer hover:border-[#f90] transition-colors">
+                                        <input type="checkbox" id="isTrending" class="w-4 h-4 text-[#f90] rounded focus:ring-[#f90] bg-zinc-800 border-zinc-600">
+                                        <span class="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                            ${Icons.Flame} Mark as Trending
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <button type="submit" id="submit-btn" class="w-full bg-[#f90] hover:bg-[#e80] text-black font-bold py-3 rounded transition-colors">Upload</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- List Panel -->
+                    <div class="lg:col-span-2">
+                        <h2 class="text-xl font-bold mb-4 border-l-4 border-[#f90] pl-3">Manage Content</h2>
+                        <div class="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead class="bg-black">
+                                        <tr>
+                                            <th class="p-4 text-sm font-medium text-gray-400">Title</th>
+                                            <th class="p-4 text-sm font-medium text-gray-400">Type</th>
+                                            <th class="p-4 text-sm font-medium text-gray-400">Trending</th>
+                                            <th class="p-4 text-sm font-medium text-gray-400">Date</th>
+                                            <th class="p-4 text-sm font-medium text-gray-400 text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="media-list" class="divide-y divide-zinc-800">
+                                        <!-- Items -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Initialize Admin Logic
+            setTimeout(() => initAdminPanel(), 0);
+
+            return container;
+        }
+
+        function initAdminPanel() {
+            const tabFile = document.getElementById('tab-file');
+            const tabUrl = document.getElementById('tab-url');
+            const uploadType = document.getElementById('upload-type');
+            const fileField = document.getElementById('file-field');
+            const urlFields = document.getElementById('url-fields');
+            const fileInput = document.getElementById('file');
+            const thumbInput = document.getElementById('thumbnailFile');
+            const fileLabel = document.getElementById('file-label');
+            const thumbLabel = document.getElementById('thumb-label');
+            const form = document.getElementById('upload-form');
+            const submitBtn = document.getElementById('submit-btn');
+            const isTrendingInput = document.getElementById('isTrending');
+
+            // Tab Switching
+            const setTab = (type) => {
+                uploadType.value = type;
+                if (type === 'file') {
+                    tabFile.className = "flex-1 py-1 text-sm font-medium rounded transition-colors bg-[#f90] text-black";
+                    tabUrl.className = "flex-1 py-1 text-sm font-medium rounded transition-colors text-gray-400 hover:text-white";
+                    fileField.classList.remove('hidden');
+                    urlFields.classList.add('hidden');
+                    fileInput.required = true;
+                    document.getElementById('remoteUrl').required = false;
+                } else {
+                    tabUrl.className = "flex-1 py-1 text-sm font-medium rounded transition-colors bg-[#f90] text-black";
+                    tabFile.className = "flex-1 py-1 text-sm font-medium rounded transition-colors text-gray-400 hover:text-white";
+                    fileField.classList.add('hidden');
+                    urlFields.classList.remove('hidden');
+                    fileInput.required = false;
+                    document.getElementById('remoteUrl').required = true;
+                }
+            };
+            tabFile.onclick = () => setTab('file');
+            tabUrl.onclick = () => setTab('url');
+
+            // File Input Changes
+            fileInput.onchange = () => {
+                if (fileInput.files[0]) {
+                    fileLabel.innerHTML = `<span class="text-[#f90] font-medium">${fileInput.files[0].name}</span>`;
+                }
+            };
+            thumbInput.onchange = () => {
+                if (thumbInput.files[0]) {
+                    thumbLabel.innerHTML = `<span class="text-[#f90] font-medium">${thumbInput.files[0].name}</span>`;
+                }
+            };
+
+            // Form Submit
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                submitBtn.disabled = true;
+                submitBtn.innerText = "Uploading...";
+
+                try {
+                    const title = document.getElementById('title').value;
+                    const type = uploadType.value;
+                    const isTrending = isTrendingInput.checked;
+                    let thumbnailDataUrl = undefined;
+
+                    if (thumbInput.files[0]) {
+                        thumbnailDataUrl = await readFileAsDataURL(thumbInput.files[0]);
+                    }
+
+                    let newItem;
+                    if (type === 'file') {
+                        const file = fileInput.files[0];
+                        if (!file) throw new Error("No file selected");
+                        
+                        const isVideo = file.type.startsWith('video/');
+                        newItem = {
+                            id: crypto.randomUUID(),
+                            title,
+                            type: isVideo ? 'video' : 'image',
+                            sourceType: 'file',
+                            file: file,
+                            createdAt: Date.now(),
+                            views: 0,
+                            thumbnail: thumbnailDataUrl,
+                            isTrending
+                        };
+                    } else {
+                        const url = document.getElementById('remoteUrl').value;
+                        const mediaType = document.querySelector('input[name="mediaType"]:checked').value;
+                        newItem = {
+                            id: crypto.randomUUID(),
+                            title,
+                            type: mediaType,
+                            sourceType: 'url',
+                            remoteUrl: url,
+                            createdAt: Date.now(),
+                            views: 0,
+                            thumbnail: thumbnailDataUrl,
+                            isTrending
+                        };
+                    }
+
+                    await addMedia(newItem);
+                    form.reset();
+                    fileLabel.innerHTML = `${Icons.Upload}<span class="text-sm mt-2">Select video or photo</span>`;
+                    thumbLabel.innerText = "Select an image from device...";
+                    isTrendingInput.checked = false;
+                    setTab('file'); // Reset tab
+                    refreshMediaList();
+                    alert("Uploaded successfully!");
+
+                } catch (error) {
+                    console.error(error);
+                    alert("Upload failed: " + error.message);
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "Upload";
+                }
+            };
+
+            refreshMediaList();
+        }
+
+        const readFileAsDataURL = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        };
+
+        async function refreshMediaList() {
+            const list = document.getElementById('media-list');
+            if(!list) return;
+            
+            const items = await getAllMedia();
+            items.sort((a, b) => b.createdAt - a.createdAt);
+
+            list.innerHTML = items.map(item => `
+                <tr class="hover:bg-zinc-800/50 transition-colors">
+                    <td class="p-4 font-medium max-w-[200px] truncate" title="${item.title}">${item.title}</td>
+                    <td class="p-4 text-sm text-gray-400 capitalize">${item.type}</td>
+                    <td class="p-4 text-sm text-gray-400">${item.isTrending ? '<span class="text-[#f90]">Yes</span>' : 'No'}</td>
+                    <td class="p-4 text-sm text-gray-400">${new Date(item.createdAt).toLocaleDateString()}</td>
+                    <td class="p-4 text-right">
+                        <button onclick="window.handleDelete('${item.id}')" class="text-red-500 hover:text-red-400 p-2 hover:bg-red-500/10 rounded transition-colors">
+                            ${Icons.Trash2}
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.handleDelete = async (id) => {
+            if (confirm('Delete this item?')) {
+                await deleteMedia(id);
+                refreshMediaList();
+            }
+        };
+
+        async function renderWatch(id) {
+            const container = document.createElement('div');
+            container.className = "min-h-screen bg-black text-white font-sans flex flex-col";
+            container.appendChild(renderNavbar());
+
+            const item = await getMediaById(id);
+
+            if (!item) {
+                container.innerHTML += `
+                    <div class="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                        <h1 class="text-4xl font-bold mb-4">404</h1>
+                        <p class="text-xl text-gray-400 mb-8">Media not found</p>
+                        <a href="#/" class="text-[#f90] hover:underline flex items-center gap-2">
+                            ${Icons.ArrowLeft} Back to Home
+                        </a>
+                    </div>
+                `;
+                return container;
+            }
+
+            // Helper for embed URL
+            const getEmbedUrl = (url) => {
+              if (url.includes('youtube.com/watch?v=')) return url.replace('watch?v=', 'embed/');
+              if (url.includes('youtu.be/')) return url.replace('youtu.be/', 'www.youtube.com/embed/');
+              if (url.includes('vimeo.com/')) {
+                  const vidId = url.split('/').pop();
+                  return `https://player.vimeo.com/video/${vidId}`;
+              }
+              if (url.includes('drive.google.com')) {
+                  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                  if (match && match[1]) return `https://drive.google.com/file/d/${match[1]}/preview`;
+              }
+              return url;
+            };
+            
+            const isEmbed = (url) => {
+                return url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com') || url.includes('drive.google.com');
+            };
+
+            let contentHtml = '';
+            let mediaUrl = '';
+            if (item.sourceType === 'file' && item.file) {
+                mediaUrl = URL.createObjectURL(item.file);
+            } else if (item.sourceType === 'url') {
+                mediaUrl = item.remoteUrl;
+            }
+
+            if (item.type === 'video') {
+                if (item.sourceType === 'url' && isEmbed(mediaUrl)) {
+                     contentHtml = `<iframe src="${getEmbedUrl(mediaUrl)}" class="w-full aspect-video bg-black" allowfullscreen></iframe>`;
+                } else {
+                     contentHtml = `<video controls autoplay class="w-full aspect-video bg-black" poster="${item.thumbnail || ''}" src="${mediaUrl}">Not supported</video>`;
+                }
+            } else {
+                contentHtml = `<img src="${mediaUrl}" class="w-full h-auto max-h-[70vh] object-contain mx-auto">`;
+            }
+
+            const main = document.createElement('main');
+            main.className = "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1";
+            main.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <div class="lg:col-span-2 space-y-4">
+                    <div class="bg-black rounded-lg overflow-hidden border border-zinc-800 shadow-2xl relative">
+                      ${contentHtml}
+                    </div>
+                    
+                    <div class="pb-4 border-b border-zinc-800">
+                      <h1 class="text-2xl font-bold text-white mb-2">${item.title}</h1>
+                      <div class="flex items-center justify-between text-zinc-400 text-sm">
+                         <div class="flex items-center gap-4">
+                           <span>${item.views} views</span>
+                           <span>•</span>
+                           <span>${new Date(item.createdAt).toLocaleDateString()}</span>
+                           ${item.isTrending ? `<span class="bg-red-600 text-white text-xs px-2 py-0.5 rounded flex items-center gap-1">${Icons.Flame} Trending</span>` : ''}
+                         </div>
+                      </div>
+                    </div>
+
+                    <div class="mt-6">
+                        <h3 class="text-lg font-bold mb-4">Comments</h3>
+                        <div class="bg-zinc-900/50 p-4 rounded-lg text-center text-zinc-500">
+                            Comments are disabled.
+                        </div>
+                    </div>
+                  </div>
+
+                  <div class="lg:col-span-1">
+                     <div class="bg-zinc-900/30 rounded-lg border border-zinc-800 p-4">
+                        <h3 class="font-bold mb-4 text-[#f90]">Recommended</h3>
+                        <p class="text-sm text-zinc-500 italic">No recommendations available.</p>
+                     </div>
+                  </div>
+                </div>
+            `;
+
+            container.appendChild(main);
+            return container;
+        }
+
+        function attachGlobalListeners() {
+            // any global listeners if needed
+        }
+    </script>
+</body>
+</html>
